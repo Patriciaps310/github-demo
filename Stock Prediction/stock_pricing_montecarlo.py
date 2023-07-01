@@ -52,7 +52,7 @@ simulations = 1000
 
 # save the simulated prices
 simulated_prices = []
-
+last_prices_simulated = []
 for i in range(simulations):
     prices = []
     for j in range(trading_days):
@@ -72,6 +72,7 @@ fig = go.Figure()
 last_date = stock_data.index[-1]
 future_dates = [last_date + datetime.timedelta(days=i) for i in range(trading_days)]
 
+
 #add lines to graph on top of each other for each iteration
 for i in range(simulations):
     # choose a random color
@@ -84,6 +85,7 @@ for i in range(simulations):
 
     ))
 
+
 # add axis labels and titles
 
 fig.update_layout(
@@ -91,5 +93,26 @@ fig.update_layout(
     xaxis_title='Date',
     yaxis_title = 'Price (USD)'
 )
-
 fig.show()
+
+
+# create a list only with the predict values in a year from now
+last_simulated_prices = [sublist[-1] for sublist in simulated_prices]
+
+# check the 90% confidence interval
+print("Expected price: ", round(np.nanmean(last_simulated_prices),2))
+print("Quantile (5%): ",np.nanpercentile(last_simulated_prices,5))
+print("Quantile (95%): ",np.nanpercentile(last_simulated_prices,95))
+
+# Create a histogram to show confidence interval of results
+plt.hist(last_simulated_prices, bins=200)
+# add vertical line with 5% and 95% threshold
+plt.axvline(np.nanpercentile(last_simulated_prices, 5), color='r', linestyle='dashed', linewidth=1)
+plt.axvline(np.nanpercentile(last_simulated_prices, 95), color='r', linestyle='dashed', linewidth=1)
+plt.show()
+
+
+
+
+
+
