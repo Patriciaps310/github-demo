@@ -7,7 +7,6 @@ from dash import dash, dcc, html, Input, Output
 
 
 
-
 # Get the stock data from 50 possible tickers
 tickers = [
     "AAPL", "MSFT", "AMZN", "GOOGL", "FB", "TSLA", "NVDA", "JPM", "JNJ", "V",
@@ -17,14 +16,6 @@ tickers = [
     "MCD",  "ACN", "QCOM", "HON", "TXN", "PM", "MMM", "GE"
 ]
 
-'''def blank_figure():
-    fig = go.Figure(go.Scatter(x=[], y=[]))
-    fig.update_layout(template=None)
-    fig.update_xaxes(showgrid=False, showticklabels=False, zeroline=False)
-    fig.update_yaxes(showgrid=False, showticklabels=False, zeroline=False)
-
-    return fig
-'''
 # Create the Dash app
 
 app = dash.Dash(__name__, suppress_callback_exceptions = True)
@@ -34,26 +25,39 @@ app.layout = html.Div(children=[
     dcc.Dropdown(
         id = 'ticker-dropdown',
         options =[{'label': ticker, 'value': ticker} for ticker in tickers],
-        value = tickers[0] # set default value
+        value = tickers[0] # set default value,
+
     ),
+
+    html.H3("Predicted Price on Date:"),
+    dcc.DatePickerSingle(
+        id='date-picker',
+        date=(datetime.datetime.today() + datetime.timedelta(days=30)).strftime("%Y-%m-%d"), #set default date to a month from now
+        min_date_allowed = datetime.datetime.today().strftime("%Y-%m-%d"),
+        max_date_allowed = (datetime.datetime.today() + datetime.timedelta(days=90)).strftime("%Y-%m-%d"),
+        display_format='YYYY-MM-DD'
+    ),
+
     html.H2("Stock Price - Past 10 Years"),
     dcc.Graph(id='stock-prices'),
     html.H2("Monte Carlo Simulation - Stock Prices"),
     dcc.Graph(id='monte-carlo-simulation'),
     html.H2("Distribution of Predicted Prices"),
-    dcc.Graph(id='histogram')])
+    dcc.Graph(id='histogram')
+    ])
 
 
 
 #connect the plotly graphs with  dash  components
 @app.callback([
-    Output(component_id = 'stock-prices', component_property = 'figure'),
-    Output(component_id = 'monte-carlo-simulation', component_property = 'figure'),
-    Output(component_id = 'histogram', component_property = 'figure'),
-    Input(component_id = 'ticker-dropdown', component_property = 'value')
+    Output(component_id='stock-prices', component_property = 'figure'),
+    Output(component_id='monte-carlo-simulation', component_property = 'figure'),
+    Output(component_id='histogram', component_property = 'figure'),
+    Input(component_id='ticker-dropdown', component_property = 'value'),
+    Input(component_id='date-picker', component_property='date')
 ])
 
-def update_graphs(ticker): #argument in this function always refers to component property of input
+def update_graphs(ticker, selected_date): #argument in this function always refers to component property of input
 
     end_date = datetime.datetime.today().strftime("%Y-%m-%d")
 
@@ -66,12 +70,13 @@ def update_graphs(ticker): #argument in this function always refers to component
 
     # Define the number of simulations and trading days
     simulations = 500
-    trading_days = 50
+    # set the number of business days that will run in each simulation
+    trading_days = np.busday_count(np.datetime64(datetime.datetime.today().strftime("%Y-%m-%d")), selected_date)
 
     # save the simulated prices
-    simulated_prices = [0] *  simulations
+    simulated_prices = [0] * simulations
     for i in range(simulations):
-        prices=[0]*(trading_days+1)
+        prices = [0]*(trading_days+1)
         latest_price = stock_data['Close'].iloc[1]
         prices[0] = latest_price
         for j in range(trading_days):
@@ -79,9 +84,9 @@ def update_graphs(ticker): #argument in this function always refers to component
             random_returns = np.random.normal(returns.mean(), returns.std())
             # exponent of log to return a vlue that can be multiplied
             latest_price = latest_price * np.exp(random_returns)
-            prices[j+1]=latest_price
+            prices[j+1] = latest_price
 
-        simulated_prices[i]=prices
+        simulated_prices[i] = prices
 
     # set dates
     last_date = stock_data.index[-1]
@@ -103,8 +108,7 @@ def update_graphs(ticker): #argument in this function always refers to component
     fig_monte_carlo.update_layout(
         title=f"{ticker} Monte Carlo Simulation - Stock Prices",
         xaxis_title="Date",
-        yaxis_title="Price ( USD)"
-    )
+        yaxis_title="Price ( USD)")
 
     # Create the figure for the historical stock prices
     fig_stock_prices = go.Figure()
@@ -118,14 +122,9 @@ def update_graphs(ticker): #argument in this function always refers to component
         title=f"{ticker} Stock Price - Past 10 Years",
         xaxis_title="Date",
         yaxis_title="Price (USD)"
-    )
+        )
 
 
-
-    '''    # check the 90% confidence interval
-        expected_price =  round(np.nanmean(last_simulated_prices),2)
-        quantile_5 = np.nanpercentile(last_simulated_prices,5)
-        quantile_95 = np.nanpercentile(last_simulated_prices,95)'''
 
     # Create the figure for the histogram
     last_simulated_prices = [sublist[-1] for sublist in simulated_prices]
@@ -136,11 +135,9 @@ def update_graphs(ticker): #argument in this function always refers to component
         title="Distribution of Predicted Prices",
         xaxis_title="Price (USD)",
         yaxis_title="Frequency"
+        )
 
-
-    )
     return fig_stock_prices, fig_monte_carlo, fig_histogram
-
 
 
 if __name__ == '__main__':
