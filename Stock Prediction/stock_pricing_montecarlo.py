@@ -58,6 +58,8 @@ def update_graphs(ticker): #argument in this function always refers to component
     # calculate returns using percent change from previous record
     returns = np.log(1 + stock_data['Close'].pct_change())
 
+
+
     # Define the number of simulations and trading days
     simulations = 1000
     trading_days = 252
@@ -109,7 +111,7 @@ def update_graphs(ticker): #argument in this function always refers to component
     fig_monte_carlo.update_layout(
         title="Monte Carlo Simulation - Stock Prices",
         xaxis_title="Date",
-        yaxis_title="Price (USD)"
+        yaxis_title="Price ( USD)"
     )
 
     '''    # check the 90% confidence interval
