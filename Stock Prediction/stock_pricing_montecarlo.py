@@ -39,7 +39,7 @@ app.layout = html.Div(children=[
 
 
 
-#connect the plotly graphs with  dash components
+#connect the plotly graphs with  dash  components
 @app.callback([
     Output(component_id = 'stock-prices', component_property = 'figure'),
     Output(component_id = 'monte-carlo-simulation', component_property = 'figure'),
