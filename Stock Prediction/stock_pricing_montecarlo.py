@@ -51,6 +51,7 @@ def update_graphs(ticker): #argument in this function always refers to component
 
     end_date = datetime.datetime.today().strftime("%Y-%m-%d")
     # get past 10years of data
+
     start_date = (datetime.datetime.today() - datetime.timedelta(days=365 * 10)).strftime("%Y-%m-%d")
     stock_data = yf.download(ticker, start=start_date, end=end_date)
 
