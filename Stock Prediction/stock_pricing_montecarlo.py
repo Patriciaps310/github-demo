@@ -17,8 +17,14 @@ tickers = [
     "MCD",  "ACN", "QCOM", "HON", "TXN", "PM", "MMM", "GE"
 ]
 
+'''def blank_figure():
+    fig = go.Figure(go.Scatter(x=[], y=[]))
+    fig.update_layout(template=None)
+    fig.update_xaxes(showgrid=False, showticklabels=False, zeroline=False)
+    fig.update_yaxes(showgrid=False, showticklabels=False, zeroline=False)
 
-
+    return fig
+'''
 # Create the Dash app
 
 app = dash.Dash(__name__, suppress_callback_exceptions = True)
@@ -44,38 +50,38 @@ app.layout = html.Div(children=[
     Output(component_id = 'stock-prices', component_property = 'figure'),
     Output(component_id = 'monte-carlo-simulation', component_property = 'figure'),
     Output(component_id = 'histogram', component_property = 'figure'),
-    Input(component_id = 'ticker_dropdown', component_property = 'value')
+    Input(component_id = 'ticker-dropdown', component_property = 'value')
 ])
 
 def update_graphs(ticker): #argument in this function always refers to component property of input
 
     end_date = datetime.datetime.today().strftime("%Y-%m-%d")
-    # get past 10years of data
 
+    # get past 10years of data
     start_date = (datetime.datetime.today() - datetime.timedelta(days=365 * 10)).strftime("%Y-%m-%d")
     stock_data = yf.download(ticker, start=start_date, end=end_date)
 
     # calculate returns using percent change from previous record
     returns = np.log(1 + stock_data['Close'].pct_change())
 
-
-
     # Define the number of simulations and trading days
-    simulations = 1000
-    trading_days = 252
+    simulations = 500
+    trading_days = 50
 
     # save the simulated prices
-    simulated_prices = []
+    simulated_prices = [0] *  simulations
     for i in range(simulations):
-        prices = [stock_data['Close'].iloc[1]]
+        prices=[0]*(trading_days+1)
+        latest_price = stock_data['Close'].iloc[1]
+        prices[0] = latest_price
         for j in range(trading_days):
             # choose a random return following a normal distribution of the returns calculated
             random_returns = np.random.normal(returns.mean(), returns.std())
             # exponent of log to return a vlue that can be multiplied
-            price = prices[-1] * np.exp(random_returns)
-            prices.append(price)
+            latest_price = latest_price * np.exp(random_returns)
+            prices[j+1]=latest_price
 
-        simulated_prices.append(prices)
+        simulated_prices[i]=prices
 
     # set dates
     last_date = stock_data.index[-1]
@@ -94,6 +100,12 @@ def update_graphs(ticker): #argument in this function always refers to component
 
         ))
 
+    fig_monte_carlo.update_layout(
+        title=f"{ticker} Monte Carlo Simulation - Stock Prices",
+        xaxis_title="Date",
+        yaxis_title="Price ( USD)"
+    )
+
     # Create the figure for the historical stock prices
     fig_stock_prices = go.Figure()
     fig_stock_prices.add_trace(go.Scatter(
@@ -108,11 +120,7 @@ def update_graphs(ticker): #argument in this function always refers to component
         yaxis_title="Price (USD)"
     )
 
-    fig_monte_carlo.update_layout(
-        title="Monte Carlo Simulation - Stock Prices",
-        xaxis_title="Date",
-        yaxis_title="Price ( USD)"
-    )
+
 
     '''    # check the 90% confidence interval
         expected_price =  round(np.nanmean(last_simulated_prices),2)
@@ -122,26 +130,18 @@ def update_graphs(ticker): #argument in this function always refers to component
     # Create the figure for the histogram
     last_simulated_prices = [sublist[-1] for sublist in simulated_prices]
     fig_histogram = go.Figure(data=[go.Histogram(x=last_simulated_prices, nbinsx=200)])
+    fig_histogram.add_vline(x=np.nanpercentile(last_simulated_prices,5), line_dash='dash', line_color = 'firebrick')
+    fig_histogram.add_vline(x=np.nanpercentile(last_simulated_prices, 95), line_dash='dash', line_color='firebrick')
     fig_histogram.update_layout(
         title="Distribution of Predicted Prices",
         xaxis_title="Price (USD)",
         yaxis_title="Frequency"
-    )
-    fig_stock_prices.show()
-    return fig_stock_prices, fig_monte_carlo, fig_histogram
-''''
-# Create the Dash app
-app = dash.Dash(__name__)
 
-app.layout = html.Div(children=[
-    html.H1("Stock Analysis"),
-    html.H2(f"{ticker} Stock Price - Past 10 Years"),
-    dcc.Graph(id='stock-prices', figure=fig_stock_prices),
-    html.H2("Monte Carlo Simulation - Stock Prices"),
-    dcc.Graph(id='monte-carlo-simulation', figure=fig_monte_carlo),
-    html.H2("Distribution of Predicted Prices"),
-    dcc.Graph(id='histogram', figure= fig_histogram)])
-'''
+
+    )
+    return fig_stock_prices, fig_monte_carlo, fig_histogram
+
+
 
 if __name__ == '__main__':
     app.run_server(debug=True)
