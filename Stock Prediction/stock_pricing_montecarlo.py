@@ -14,7 +14,7 @@ tickers = [
     "WMT", "MA", "PG", "UNH", "HD", "VZ", "BAC", "DIS", "PYPL", "ADBE", "CMCSA",
     "NFLX", "INTC", "PFE", "KO", "PEP", "CSCO", "ABT", "ABBV", "T", "NKE", "ORCL",
     "MRK", "CRM", "XOM", "IBM", "AMGN", "CVX", "AVGO", "TMO", "MDT", "WFC", "COST",
-    "MCD", "ACN", "QCOM", "HON", "TXN", "PM", "MMM", "GE"
+    "MCD",  "ACN", "QCOM", "HON", "TXN", "PM", "MMM", "GE"
 ]
 
 
